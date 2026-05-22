@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>記憶彩色方塊</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: "Noto Sans TC", Arial, sans-serif;
+    /* 活潑鮮豔的彩色漸層背景 */
+    background: linear-gradient(135deg, #fff7ad, #ffd6e8, #b8f7ff);
+    color: #263238;
+    text-align: center;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: auto;
+    padding: 24px;
+  }
+
+  h1 {
+    font-size: 42px;
+    color: #ff4f8b;
+    text-shadow: 2px 2px #ffffff;
+  }
+
+  /* 圓角卡片設計 */
+  .card {
+    background: white;
+    border-radius: 28px;
+    padding: 24px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    margin-bottom: 20px;
+  }
+
+  input {
+    padding: 14px 18px;
+    border-radius: 18px;
+    border: 3px solid #7bdff2;
+    font-size: 20px;
+    width: 260px;
+    text-align: center;
+    outline: none;
+  }
+
+  input:focus {
+    border-color: #4cc9f0;
+  }
+
+  /* 大按鈕設計 */
+  button {
+    border: none;
+    padding: 14px 28px;
+    border-radius: 999px;
+    font-size: 22px;
+    font-weight: bold;
+    cursor: pointer;
+    background: linear-gradient(135deg, #ff9f1c, #ffbf69);
+    color: white;
+    box-shadow: 0 6px 0 #d97706;
+    margin: 8px;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+
+  button:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 #d97706;
+  }
+
+  .info {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    font-size: 22px;
+    font-weight: bold;
+    flex-wrap: wrap;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+  }
+
+  .game-area {
+    display: grid;
+    grid-template-columns: repeat(3, 150px);
+    gap: 28px;
+    justify-content: center;
+    margin: 30px 0;
+  }
+
+  .block {
+    width: 150px;
+    height: 150px;
+    border-radius: 26px;
+    background: #eeeeee;
+    box-shadow: 0 8px 0 rgba(0,0,0,0.18);
+    cursor: pointer;
+    transition: transform 0.2s;
+    border: 5px solid white;
+  }
+
+  .block:hover {
+    transform: scale(1.06);
+  }
+
+  .question-color {
+    width: 110px;
+    height: 110px;
+    border-radius: 24px;
+    margin: 15px auto;
+    border: 5px solid white;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+  }
+
+  .message {
+    font-size: 26px;
+    font-weight: bold;
+    color: #0077b6;
+    min-height: 40px;
+    margin-bottom: 10px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 18px;
+  }
+
+  th {
+    background: #4cc9f0;
+    color: white;
+  }
+
+  td, th {
+    padding: 12px;
+    border-bottom: 2px solid #e0f7fa;
+  }
+
+  tr:nth-child(even) {
+    background: #f1fcff;
+  }
+
+  .badge {
+    display: inline-block;
+    background: #ff5d8f;
+    color: white;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 16px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <h1>🌈 記憶彩色方塊</h1>
+
+  <div class="card" id="loginCard">
+    <h2>請輸入玩家暱稱</h2>
+    <input id="nickname" placeholder="例如：小小記憶王" autocomplete="off">
+    <br><br>
+    <button onclick="startGame()">開始挑戰</button>
+  </div>
+
+  <div class="card" id="gameCard" style="display:none;">
+    <div class="info">
+      <div>玩家：<span id="playerName"></span></div>
+      <div>分數：<span id="score" style="color: #ff595e;">0</span></div>
+      <div>時間：<span id="time" style="color: #1982c4;">0.0</span> 秒</div>
+      <div>題號：<span id="round">0</span> / 10</div>
+    </div>
+
+    <div class="message" id="message">請記住顏色位置！</div>
+
+    <div class="game-area" id="blocks"></div>
+
+    <div id="questionBox">
+      <div class="question-color" id="questionColor" style="display:none;"></div>
+    </div>
+
+    <button id="nextBtn" onclick="nextRound()" style="display:none; margin-top: 20px;">下一題</button>
+  </div>
+
+  <div class="card">
+    <h2>🏆 排行榜 <span class="badge">高分優先・同分比速度</span></h2>
+    <table>
+      <thead>
+        <tr>
+          <th>名次</th>
+          <th>暱稱</th>
+          <th>分數</th>
+          <th>時間</th>
+          <th>日期</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboard"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  const colors = [
+    "#ff595e", "#ffca3a", "#8ac926", "#1982c4", 
+    "#6a4c93", "#00bbf9", "#f15bb5", "#00f5d4"
+  ];
+
+  let player = "";
+  let answerColors = [];
+  let currentQuestionColor = "";
+  let score = 0;
+  let round = 0;
+  let startTime = 0;
+  let timer = null;
+  let canClick = false;
+
+  const totalRounds = 10;
+  const memoryTime = 1800; // 記憶時間 1.8 秒
+
+  // 1. 開始遊戲
+  function startGame() {
+    player = document.getElementById("nickname").value.trim();
+
+    if (!player) {
+      alert("請先輸入暱稱喔！");
+      return;
+    }
+
+    document.getElementById("playerName").innerText = player;
+    document.getElementById("loginCard").style.display = "none";
+    document.getElementById("gameCard").style.display = "block";
+
+    score = 0;
+    round = 0;
+    startTime = Date.now();
+
+    timer = setInterval(updateTime, 100);
+    nextRound();
+  }
+
+  // 2. 更新計時器
+  function updateTime() {
+    const t = ((Date.now() - startTime) / 1000).toFixed(1);
+    document.getElementById("time").innerText = t;
+  }
+
+  // 3. 進入下一題
+  function nextRound() {
+    if (round >= totalRounds) {
+      endGame();
+      return;
+    }
+
+    round++;
+    document.getElementById("round").innerText = round;
+    document.getElementById("score").innerText = score;
+    document.getElementById("nextBtn").style.display = "none";
+    document.getElementById("questionColor").style.display = "none";
+    document.getElementById("message").innerText = "👀 請記住這 3 個顏色的位置！";
+
+    createBlocksWithColors();
+    canClick = false;
+
+    // 1.8 秒後隱藏顏色並出題
+    setTimeout(() => {
+      hideColorsAndAsk();
+    }, memoryTime);
+  }
+
+  // 4. 產生題目方塊
+  function createBlocksWithColors() {
+    const blocks = document.getElementById("blocks");
+    blocks.innerHTML = "";
+
+    // 隨機選出 3 種不重複的顏色
+    answerColors = shuffle([...colors]).slice(0, 3);
+
+    answerColors.forEach((color, index) => {
+      const div = document.createElement("div");
+      div.className = "block";
+      div.style.background = color;
+      div.dataset.index = index;
+      div.onclick = () => checkAnswer(index);
+      blocks.appendChild(div);
+    });
+  }
+
+  // 5. 隱藏顏色並顯示題目
+  function hideColorsAndAsk() {
+    const blockList = document.querySelectorAll(".block");
+    blockList.forEach(block => {
+      block.style.background = "#ffffff"; // 顏色消失變成白色
+    });
+
+    // 隨機選出剛剛 3 個顏色中的其中 1 個作為題目
+    currentQuestionColor = answerColors[Math.floor(Math.random() * 3)];
+
+    document.getElementById("questionColor").style.display = "block";
+    document.getElementById("questionColor").style.background = currentQuestionColor;
+    document.getElementById("message").innerText = "🤔 請點選剛剛這個顏色原本的位置！";
+
+    canClick = true;
+  }
+
+  // 6. 檢查答案
+  function checkAnswer(index) {
+    if (!canClick) return;
+    canClick = false; // 避免重複點擊
+
+    const correctIndex = answerColors.indexOf(currentQuestionColor);
+    const blockList = document.querySelectorAll(".block");
+
+    // 揭曉所有原本的顏色
+    answerColors.forEach((color, i) => {
+      blockList[i].style.background = color;
+    });
+
+    if (index === correctIndex) {
+      score += 10;
+      document.getElementById("message").innerText = "🎉 答對了！加 10 分！";
+    } else {
+      document.getElementById("message").innerText = "💥 差一點！正確位置已經幫你亮出來";
+    }
+
+    document.getElementById("score").innerText = score;
+    
+    // 如果是最後一題，按鈕文字改為「查看結果」
+    const nextBtn = document.getElementById("nextBtn");
+    nextBtn.innerText = (round === totalRounds) ? "查看結果" : "下一題";
+    nextBtn.style.display = "inline-block";
+  }
+
+  // 7. 遊戲結束與記錄
+  function endGame() {
+    clearInterval(timer);
+    const finalTime = Number(((Date.now() - startTime) / 1000).toFixed(1));
+
+    document.getElementById("message").innerText = 
+      `🏆 遊戲完成！你的分數是 ${score} 分，花費 ${finalTime} 秒`;
+    
+    document.getElementById("nextBtn").style.display = "none";
+    document.getElementById("blocks").innerHTML = "";
+    document.getElementById("questionColor").style.display = "none";
+
+    // 儲存記錄並更新排行榜
+    saveRecord(player, score, finalTime);
+    loadLeaderboard();
+
+    setTimeout(() => {
+      alert(`挑戰完成！\n得分：${score} 分\n時間：${finalTime} 秒`);
+      // 重新顯示登入畫面以便換人玩
+      document.getElementById("loginCard").style.display = "block";
+      document.getElementById("gameCard").style.display = "none";
+      document.getElementById("nickname").value = "";
+    }, 500);
+  }
+
+  // 8. 儲存記錄 (包含 localStorage 與預留 GAS)
+  function saveRecord(name, score, time) {
+    // --- 本機儲存 (localStorage) ---
+    const records = JSON.parse(localStorage.getItem("memoryColorRecords")) || [];
+    records.push({
+      name,
+      score,
+      time,
+      date: new Date().toLocaleDateString()
+    });
+    localStorage.setItem("memoryColorRecords", JSON.stringify(records));
+
+    // --- 預留串接 Google Apps Script (GAS) 區塊 ---
+    /*
+    const GAS_URL = "在此貼上你部署後的 GAS 網址";
+    
+    fetch(GAS_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: name,
+        score: score,
+        time: time
+      })
+    }).then(() => {
+      console.log("資料已發送至 Google 試算表");
+    }).catch(error => {
+      console.error("發送失敗:", error);
+    });
+    */
+  }
+
+  // 9. 載入並顯示排行榜
+  function loadLeaderboard() {
+    const records = JSON.parse(localStorage.getItem("memoryColorRecords")) || [];
+
+    // 排序：分數高優先 (降冪)，同分則時間短優先 (升冪)
+    records.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.time - b.time;
+    });
+
+    const topRecords = records.slice(0, 10);
+    const tbody = document.getElementById("leaderboard");
+    tbody.innerHTML = "";
+
+    topRecords.forEach((r, i) => {
+      // 前三名加上皇冠 Emoji
+      let rankText = i + 1;
+      if (i === 0) rankText = "🥇 1";
+      if (i === 1) rankText = "🥈 2";
+      if (i === 2) rankText = "🥉 3";
+
+      tbody.innerHTML += `
+        <tr>
+          <td>${rankText}</td>
+          <td>${r.name}</td>
+          <td><strong>${r.score}</strong></td>
+          <td>${r.time} 秒</td>
+          <td>${r.date}</td>
+        </tr>
+      `;
+    });
+  }
+
+  // 陣列洗牌函數
+  function shuffle(array) {
+    return array.sort(() => Math.random() - 0.5);
+  }
+
+  // 初始載入排行榜
+  loadLeaderboard();
+</script>
+
+</body>
+</html>
