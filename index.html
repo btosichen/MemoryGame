@@ -398,36 +398,32 @@
 
   // 9. 載入並顯示排行榜
   function loadLeaderboard() {
-    const records = JSON.parse(localStorage.getItem("memoryColorRecords")) || [];
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzJbH3L2Na7HofB_RLBGHLWmD75Wcd_MG5M_iRj1_hmSHd9PA9R5t9ljQIOdmiXaQRiUg/exec";
 
-    // 排序：分數高優先 (降冪)，同分則時間短優先 (升冪)
-    records.sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      return a.time - b.time;
+  fetch(GAS_URL)
+    .then(res => res.json())
+    .then(records => {
+      const tbody = document.getElementById("leaderboard");
+      tbody.innerHTML = "";
+
+      records.forEach((r, i) => {
+        let rankText = i + 1;
+        if (i === 0) rankText = "🥇 1";
+        if (i === 1) rankText = "🥈 2";
+        if (i === 2) rankText = "🥉 3";
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${rankText}</td>
+            <td>${r.name}</td>
+            <td><strong>${r.score}</strong></td>
+            <td>${r.time} 秒</td>
+            <td>${r.date}</td>
+          </tr>
+        `;
+      });
     });
-
-    const topRecords = records.slice(0, 10);
-    const tbody = document.getElementById("leaderboard");
-    tbody.innerHTML = "";
-
-    topRecords.forEach((r, i) => {
-      // 前三名加上皇冠 Emoji
-      let rankText = i + 1;
-      if (i === 0) rankText = "🥇 1";
-      if (i === 1) rankText = "🥈 2";
-      if (i === 2) rankText = "🥉 3";
-
-      tbody.innerHTML += `
-        <tr>
-          <td>${rankText}</td>
-          <td>${r.name}</td>
-          <td><strong>${r.score}</strong></td>
-          <td>${r.time} 秒</td>
-          <td>${r.date}</td>
-        </tr>
-      `;
-    });
-  }
+}
 
   // 陣列洗牌函數
   function shuffle(array) {
