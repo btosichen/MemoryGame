@@ -354,7 +354,7 @@
 
     // 儲存記錄並更新排行榜
     saveRecord(player, score, finalTime);
-    loadLeaderboard();
+    setTimeout(loadLeaderboardFromSheet, 800);
 
     setTimeout(() => {
       alert(`挑戰完成！\n得分：${score} 分\n時間：${finalTime} 秒`);
@@ -380,7 +380,7 @@
 
     // --- 串接 Google Apps Script (GAS) ---
     // 將下方的網址替換成你剛剛複製的 GAS 網頁應用程式網址
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwui2iCgchfx-ihgcjfVMehlTfqEmXtg0dShTvxsHZ07xoV_VaTLJvzXC7FOpwcDTvbqQ/exec"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyU8oYtZ24_l0clM3XyRZl2ZApYFFiJ4vYM_k6N-cZbNfAQ1Uido9dwVBCGKfvyZ6B57A/exec"; 
     
     fetch(GAS_URL, {
   method: "POST",
@@ -397,32 +397,38 @@
    }
 
   // 9. 載入並顯示排行榜
-  function loadLeaderboard() {
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbwui2iCgchfx-ihgcjfVMehlTfqEmXtg0dShTvxsHZ07xoV_VaTLJvzXC7FOpwcDTvbqQ/exec";
+  function loadLeaderboard(records) {
+  const tbody = document.getElementById("leaderboard");
+  tbody.innerHTML = "";
 
-  fetch(GAS_URL)
-    .then(res => res.json())
-    .then(records => {
-      const tbody = document.getElementById("leaderboard");
-      tbody.innerHTML = "";
+  records.forEach((r, i) => {
+    let rankText = i + 1;
+    if (i === 0) rankText = "🥇 1";
+    if (i === 1) rankText = "🥈 2";
+    if (i === 2) rankText = "🥉 3";
 
-      records.forEach((r, i) => {
-        let rankText = i + 1;
-        if (i === 0) rankText = "🥇 1";
-        if (i === 1) rankText = "🥈 2";
-        if (i === 2) rankText = "🥉 3";
+    tbody.innerHTML += `
+      <tr>
+        <td>${rankText}</td>
+        <td>${r.name}</td>
+        <td><strong>${r.score}</strong></td>
+        <td>${r.time} 秒</td>
+        <td>${r.date}</td>
+      </tr>
+    `;
+  });
+}
 
-        tbody.innerHTML += `
-          <tr>
-            <td>${rankText}</td>
-            <td>${r.name}</td>
-            <td><strong>${r.score}</strong></td>
-            <td>${r.time} 秒</td>
-            <td>${r.date}</td>
-          </tr>
-        `;
-      });
-    });
+function loadLeaderboardFromSheet() {
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyU8oYtZ24_l0clM3XyRZl2ZApYFFiJ4vYM_k6N-cZbNfAQ1Uido9dwVBCGKfvyZ6B57A/exec";
+
+  const oldScript = document.getElementById("jsonpLeaderboard");
+  if (oldScript) oldScript.remove();
+
+  const script = document.createElement("script");
+  script.id = "jsonpLeaderboard";
+  script.src = GAS_URL + "?callback=loadLeaderboard&v=" + Date.now();
+  document.body.appendChild(script);
 }
 
   // 陣列洗牌函數
@@ -431,7 +437,7 @@
   }
 
   // 初始載入排行榜
-  loadLeaderboard();
+loadLeaderboardFromSheet();
 </script>
 
 </body>
